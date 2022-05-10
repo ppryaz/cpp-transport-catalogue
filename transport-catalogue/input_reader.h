@@ -27,5 +27,5 @@ namespace transport_catalogue::input {
 
 	std::vector<std::string> FillInputBuffer(std::istream&);
 
-	void Request(std::vector<std::string>& buffer, transport_catalogue::TransportCatalogue& catalogue);
+	void Request(std::istream&, transport_catalogue::TransportCatalogue& catalogue);
 }

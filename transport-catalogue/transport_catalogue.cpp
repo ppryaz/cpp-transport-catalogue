@@ -18,9 +18,9 @@ namespace transport_catalogue {
 	}
 
 	void TransportCatalogue::AddStop(std::string_view name, 
-										Coordinates& coordinates, 
-										std::vector<std::pair<std::string, size_t>>& stops_distance) {
-		const auto& stop = stops_.emplace_back(Stop{ std::string(name), coordinates,  stops_distance });
+										Coordinates& coordinates
+										) 	{
+		const auto& stop = stops_.emplace_back(Stop{ std::string(name), coordinates });
 		stops_name_.insert({ stop.name, &stop });
 		buses_in_stop_[&stop];
 	}

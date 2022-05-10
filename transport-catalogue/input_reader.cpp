@@ -86,17 +86,21 @@ namespace transport_catalogue::input {
         return requests;
     }
 
-    void Request(std::vector<std::string>& buffer, TransportCatalogue& catalogue) {
+    void Request(std::istream& in, TransportCatalogue& catalogue) {
+    	std::vector<std::string>buffer = input::FillInputBuffer(in);//
         std::vector<std::string_view> route_request;
         std::vector<std::string_view> stops_names;
+        std::vector<std::pair<std::string_view, std::vector<std::pair<std::string, size_t>>>>stops_dist;
         for (std::string_view str : buffer) {
             size_t shift = str.find(' ');
             std::string_view request = str.substr(0, shift);
             str.remove_prefix(shift + 1);
             if (request == "Stop"s) {
+            	//стоп реквест отдает имя, координаты и вектор пар - соседняя остановка и расстояние до нее
                 auto [name, coordinates, stops_distance] = StopRequest(str);
-                catalogue.AddStop(name, coordinates, stops_distance);
+                catalogue.AddStop(name, coordinates);
                 stops_names.push_back(name);
+                stops_dist.push_back(make_pair (name,  stops_distance));
                 continue;
             }
             if (request == "Bus") {
@@ -104,13 +108,13 @@ namespace transport_catalogue::input {
             }
         }
 
-        for (std::string_view stop : stops_names) {
+        for (auto[ stop, pair_stop_to_distance] : stops_dist) {
             auto* from = catalogue.FindStop(stop);
-            for (auto& [to, distance] : from->stops_distance) {
+            for (auto& [to, distance] : pair_stop_to_distance) {
                 catalogue.SetDistanceBetweenStops(from, catalogue.FindStop(to), distance);
+            	}
             }
-        }
-
+			
         for (std::string_view route : route_request) {
             auto [name, stops, is_circular] = RouteRequest(route);
             catalogue.AddRoute(name, stops, is_circular);

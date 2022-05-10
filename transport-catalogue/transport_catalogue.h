@@ -18,7 +18,6 @@ namespace transport_catalogue {
 	{
 		std::string name;
 		Coordinates coordinates;
-		std::vector<std::pair<std::string, size_t>> stops_distance;
 	};
 
 	struct Bus
@@ -37,6 +36,7 @@ namespace transport_catalogue {
 		double curvature;
 	};
 
+	namespace detail {
 	struct DistanceBetweenStopsHasher {
 	public:
 		size_t operator() (const std::pair<const Stop*, const Stop*> stops_pair) const {
@@ -45,14 +45,15 @@ namespace transport_catalogue {
 	private:
 		std::hash<const void*> hasher;
 	};
+	}
 
 	class TransportCatalogue
 	{
 	public:
 		void AddRoute(std::string_view name, const std::vector<std::string_view>& stops, bool is_circular);
 		void AddStop(std::string_view name, 
-						Coordinates& coordinates, 
-						std::vector<std::pair<std::string, size_t>>& stops_distance);
+						Coordinates& coordinates
+						);
 		RouteInfo GetRouteInfo(std::string_view route);
 		const Bus* FindRoute(std::string_view route_name);
 		const Stop* FindStop(std::string_view stop_name);
@@ -67,6 +68,6 @@ namespace transport_catalogue {
 		std::unordered_map<std::string_view, const Bus*> buses_name_;
 		std::unordered_map<std::string_view, const Stop*> stops_name_;
 		std::unordered_map<const Stop*, std::set<std::string>> buses_in_stop_;
-		std::unordered_map<std::pair<const Stop*, const Stop*>, double, DistanceBetweenStopsHasher> distance_between_stops_;
+		std::unordered_map<std::pair<const Stop*, const Stop*>, double, detail::DistanceBetweenStopsHasher> distance_between_stops_;
 	};
 }
