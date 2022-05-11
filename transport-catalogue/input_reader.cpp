@@ -33,9 +33,7 @@ namespace transport_catalogue::input {
         return words;
     }
 
-    std::tuple < std::string_view,
-        transport_catalogue::Coordinates,
-        std::vector<std::pair<std::string, size_t>> > StopRequest(std::string_view stop) {
+    std::tuple < std::string_view, transport_catalogue::Coordinates, std::vector<std::pair<std::string, size_t>> > StopRequest(std::string_view stop) {
         size_t shift = stop.find(':');
         std::string_view name = stop.substr(0, shift);
         stop.remove_prefix(shift + 2);
@@ -67,7 +65,6 @@ namespace transport_catalogue::input {
         return make_tuple(name, stops, is_circular);
     }
 
-
     std::pair<std::string, size_t> ParseDistanceBetweenStops(std::string_view stops_distance) {
         size_t shift = stops_distance.find('m');
         size_t distance = std::stoul(std::string(stops_distance.substr(0, shift)));
@@ -96,8 +93,7 @@ namespace transport_catalogue::input {
             std::string_view request = str.substr(0, shift);
             str.remove_prefix(shift + 1);
             if (request == "Stop"s) {
-            	//стоп реквест отдает имя, координаты и вектор пар - соседняя остановка и расстояние до нее
-                auto [name, coordinates, stops_distance] = StopRequest(str);
+            	auto [name, coordinates, stops_distance] = StopRequest(str);
                 catalogue.AddStop(name, coordinates);
                 stops_names.push_back(name);
                 stops_dist.push_back(make_pair (name,  stops_distance));
@@ -107,17 +103,15 @@ namespace transport_catalogue::input {
                 route_request.push_back(str);
             }
         }
-
-        for (auto[ stop, pair_stop_to_distance] : stops_dist) {
+        for (auto[ stop, pair_stop_dist] : stops_dist) {
             auto* from = catalogue.FindStop(stop);
-            for (auto& [to, distance] : pair_stop_to_distance) {
+            for (auto& [to, distance] : pair_stop_dist) {
                 catalogue.SetDistanceBetweenStops(from, catalogue.FindStop(to), distance);
             	}
             }
-			
         for (std::string_view route : route_request) {
             auto [name, stops, is_circular] = RouteRequest(route);
             catalogue.AddRoute(name, stops, is_circular);
         }
     }
-}
+}//namespace input

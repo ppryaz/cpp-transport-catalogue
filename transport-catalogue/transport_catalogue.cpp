@@ -7,7 +7,6 @@ namespace transport_catalogue {
 										bool is_circular) {
 		std::vector<const Stop*> route_stops;
 		route_stops.reserve(stops.size());
-
 		auto& route = buses_.emplace_back(Bus{ std::string(name), route_stops, is_circular });
 		for (const auto& stop : stops) {
 			const auto* stop_ptr = FindStop(stop);
@@ -18,8 +17,7 @@ namespace transport_catalogue {
 	}
 
 	void TransportCatalogue::AddStop(std::string_view name, 
-										Coordinates& coordinates
-										) 	{
+										Coordinates& coordinates) {
 		const auto& stop = stops_.emplace_back(Stop{ std::string(name), coordinates });
 		stops_name_.insert({ stop.name, &stop });
 		buses_in_stop_[&stop];
@@ -51,7 +49,6 @@ namespace transport_catalogue {
 		if (route_ptr == nullptr) {
 			return {};
 		}
-
 		std::vector<const Stop*> stops_local{ route_ptr->stops.begin(), route_ptr->stops.end() };
 		std::unordered_set<const Stop*> unique_stops;
 
@@ -60,18 +57,15 @@ namespace transport_catalogue {
 				unique_stops.insert(stop);
 			}
 			});
-
 		if (!route_ptr->is_circular) {
 			stops_local.insert(stops_local.end(), next(route_ptr->stops.rbegin()), route_ptr->stops.rend());
 		}
-
 		double route_length_straight = 0;
 		double route_length = 0;
 		for (std::vector<const Stop*>::const_iterator it(stops_local.begin()); it != prev(stops_local.end()); ++it) {
 			route_length_straight += ComputeDistance((*it)->coordinates, (*(it + 1))->coordinates);
 			route_length += GetDistanceBetweenStops(*it, *(it + 1));
 		}
-
 		result.name = route_ptr->name;
 		result.stops = static_cast<int>(stops_local.size());
 		result.unique_stops = static_cast<int>(unique_stops.size());
@@ -96,4 +90,4 @@ namespace transport_catalogue {
 		}
 		return GetDistanceBetweenStops(to, from);
 	}
-}
+} //namespace transport_catalogue

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -28,4 +29,4 @@ namespace transport_catalogue::input {
 	std::vector<std::string> FillInputBuffer(std::istream&);
 
 	void Request(std::istream&, transport_catalogue::TransportCatalogue& catalogue);
-}
+} //namespace input

@@ -1,9 +1,11 @@
 #pragma once
-#include "transport_catalogue.h"
-#include "geo.h"
+
 #include <string>
 #include <vector>
 #include <iostream>
+
+#include "transport_catalogue.h"
+#include "geo.h"
 
 namespace transport_catalogue::statistics {
 
@@ -15,9 +17,4 @@ namespace transport_catalogue::statistics {
 
 	std::vector<std::string> ReadRequest(std::istream& in);
 
-	/*std::ostream& PrintRouteInfo(std::ostream&os, RouteInfo& route);
-
-	std::ostream& PrintStopInfo(std::ostream&os, std::string_view name, TransportCatalogue& catalogue);
-
-	std::ostream& PrintEmpty(std::ostream&os, std::string_view type, std::string_view name);*/
-}
+	} //namespace statistics
