@@ -1,9 +1,8 @@
 #pragma once
-
 #include <algorithm>
 #include <deque>
-#include <execution>
 #include <numeric>
+#include <map>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -11,70 +10,63 @@
 #include <string>
 #include <string_view>
 #include <functional>
+#include <optional>
 
-#include "geo.h"
+#include "domain.h"
 
 namespace transport_catalogue {
 
-	struct Stop
-	{
-		std::string name;
-		Coordinates coordinates;
-	};
+using namespace domain;
 
-	struct Bus
-	{
-		std::string name;
-		std::vector<const Stop*> stops;
-		bool is_circular;
-	};
-
-	struct RouteInfo
-	{
+struct RouteInfo {
 		std::string_view name;
-		int stops;
-		int unique_stops;
-		size_t route_length;
-		double curvature;
-	};
+		int stops = 0;
+		int unique_stops = 0;
+		int route_length = 0;
+		double curvature = 0.0;
+};
 
-	namespace detail {
-	struct DistanceBetweenStopsHasher {
+namespace detail {
+struct DistanceBetweenStopsHasher {
 	public:
-		size_t operator() (const std::pair<const Stop*, const Stop*> stops_pair) const {
+		size_t operator()(const std::pair<StopPtr, StopPtr> stops_pair) const {
 			return hasher(stops_pair.first) + 37 * hasher(stops_pair.second);
 		}
 	private:
 		std::hash<const void*> hasher;
-	};
-	}//namespace detail
+};
+}
 
-	class TransportCatalogue
-	{
+class TransportCatalogue {
 	public:
-		void AddRoute(std::string_view name, const std::vector<std::string_view>& stops, bool is_circular);
-		
-        void AddStop(std::string_view name, Coordinates& coordinates);
-		
-        RouteInfo GetRouteInfo(std::string_view route);
-		
-        const Bus* FindRoute(std::string_view route_name);
-		
-        const Stop* FindStop(std::string_view stop_name);
-		
-        std::set<std::string> GetStopInfo(std::string_view stop_name);
-		
-        void SetDistanceBetweenStops(const Stop* from, const Stop* to, size_t distance);
-		
-        size_t GetDistanceBetweenStops(const Stop* from, const Stop* to);
+		void AddStop(const std::string_view name, geo::Coordinates coordinates);
+
+		void AddRoute(const std::string_view &name,
+				const std::vector<std::string_view> &stops, bool is_circular);
+		BusPtr FindRoute(const std::string_view &route_name) const;
+
+		StopPtr FindStop(const std::string_view &stop_name) const;
+
+		const std::unordered_set<BusPtr>* GetStopInfo(
+				const std::string_view &stop_name) const;
+
+		void SetDistanceBetweenStops(StopPtr from, StopPtr to, int distance);
+
+		size_t GetDistanceBetweenStops(StopPtr from, StopPtr to) const;
+
+		const std::map<std::string_view, BusPtr> GetAllRoutes() const;
+
+		const std::optional<RouteInfo> GetRouteInfo(
+				const std::string_view &bus_name) const;
 
 	private:
 		std::deque<Bus> buses_;
 		std::deque<Stop> stops_;
 
-		std::unordered_map<std::string_view, const Bus*> buses_name_;
-		std::unordered_map<std::string_view, const Stop*> stops_name_;
-		std::unordered_map<const Stop*, std::set<std::string>> buses_in_stop_;
-		std::unordered_map<std::pair<const Stop*, const Stop*>, double, detail::DistanceBetweenStopsHasher> distance_between_stops_;
-	};
-}//namespace transport_catalogue
+		std::unordered_map<std::string_view, BusPtr> buses_name_;
+		std::unordered_map<std::string_view, StopPtr> stops_name_;
+		std::unordered_map<StopPtr, std::unordered_set<BusPtr>> buses_in_stop_;
+		std::unordered_map<std::pair<StopPtr, StopPtr>, double,
+				detail::DistanceBetweenStopsHasher> distance_between_stops_;
+};
+}
