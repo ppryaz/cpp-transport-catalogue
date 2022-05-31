@@ -39,13 +39,13 @@ struct DistanceBetweenStopsHasher {
 
 class TransportCatalogue {
 	public:
-		void AddStop(const std::string_view name, geo::Coordinates coordinates);
+		void AddStop(const std::string_view name, const geo::Coordinates& coordinates);
 
-		void AddRoute(const std::string_view &name,
-				const std::vector<std::string_view> &stops, bool is_circular);
-		BusPtr FindRoute(const std::string_view &route_name) const;
+		void AddRoute(const std::string_view name,
+				const std::vector<std::string_view> stops, bool is_circular);
+		BusPtr FindRoute(const std::string_view route_name) const;
 
-		StopPtr FindStop(const std::string_view &stop_name) const;
+		StopPtr FindStop(const std::string_view stop_name) const;
 
 		const std::unordered_set<BusPtr>* GetStopInfo(
 				const std::string_view &stop_name) const;

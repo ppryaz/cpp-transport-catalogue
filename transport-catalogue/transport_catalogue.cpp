@@ -2,8 +2,8 @@
 
 namespace transport_catalogue {
 
-void TransportCatalogue::AddRoute(const std::string_view &name,
-		const std::vector<std::string_view> &stops, bool is_circular) {
+void TransportCatalogue::AddRoute(const std::string_view name,
+				const std::vector<std::string_view> stops, bool is_circular) {
 	std::vector<const Stop*> route_stops;
 	route_stops.reserve(stops.size());
 
@@ -18,14 +18,14 @@ void TransportCatalogue::AddRoute(const std::string_view &name,
 }
 
 void TransportCatalogue::AddStop(const std::string_view name,
-		geo::Coordinates coordinates) {
+		const geo::Coordinates& coordinates) {
 	const auto &stop = stops_.emplace_back(
 			Stop { std::string(name), coordinates });
 	stops_name_.insert( { stop.name, &stop });
 	buses_in_stop_[&stop];
 }
 
-BusPtr TransportCatalogue::FindRoute(const std::string_view &route_name) const {
+BusPtr TransportCatalogue::FindRoute(const std::string_view route_name) const {
 	const auto it = buses_name_.find(route_name);
 	if (it == buses_name_.end()) {
 		return nullptr;
@@ -34,7 +34,7 @@ BusPtr TransportCatalogue::FindRoute(const std::string_view &route_name) const {
 	}
 }
 
-StopPtr TransportCatalogue::FindStop(const std::string_view &stop_name) const {
+StopPtr TransportCatalogue::FindStop(const std::string_view stop_name) const {
 	const auto it = stops_name_.find(stop_name);
 	if (it == stops_name_.end()) {
 		return nullptr;
