@@ -6,8 +6,16 @@
 
 using namespace std::literals;
 int main() {
-	transport_catalogue::TransportCatalogue db;
+    //test data from file
+   // std::ifstream in("D:\\temp\\test4.json"s);
+    //std::ofstream out("D:\\temp\\out4.json"s);
+
+    transport_catalogue::TransportCatalogue db;
     renderer::MapRenderer renderer;
-    json_reader::JsonReader input(std::cin, &db, &renderer);
-    input.PrintResult(std::cout);
+    transport_router::TransportRouter router;
+    // для ввода данных с консоли   использовать std::cin  
+    // ввод  данных из файла - in
+    json_reader::JsonReader input(std::cin, &db, &renderer, &router); 
+    input.PrintResult(std::cout); // вывод в консоль
+    //input.PrintResult(out); //вывод в файл
 }

@@ -76,6 +76,10 @@ const std::map<std::string_view, BusPtr> TransportCatalogue::GetAllRoutes() cons
 	return result;
 }
 
+const std::unordered_map<std::string_view, StopPtr>* TransportCatalogue::GetAllStops() const {
+	return &stops_name_;
+}
+
 const std::optional<RouteInfo> TransportCatalogue::GetRouteInfo(
 		const std::string_view &bus_name) const {
 	RouteInfo result;

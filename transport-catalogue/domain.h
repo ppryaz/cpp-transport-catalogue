@@ -22,4 +22,10 @@ struct Bus {
 
 using BusPtr = const Bus*;
 
+struct RouteSettings
+{
+	int bus_wait_time = 1;
+	double bus_velocity = 1.0;
+};
+
 } // namespace Domain

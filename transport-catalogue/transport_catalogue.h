@@ -56,6 +56,8 @@ class TransportCatalogue {
 
 		const std::map<std::string_view, BusPtr> GetAllRoutes() const;
 
+		const std::unordered_map<std::string_view, StopPtr>* GetAllStops() const;
+
 		const std::optional<RouteInfo> GetRouteInfo(
 				const std::string_view &bus_name) const;
 

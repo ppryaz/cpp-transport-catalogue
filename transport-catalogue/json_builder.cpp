@@ -1,135 +1,127 @@
 #include "json_builder.h"
 
+using namespace std::literals;
+
 namespace json {
+	DictKeyContext Builder::Key(std::string key) {
+		if (node_stack_.back()->IsDict() && !key_) {
+			key_ = std::move(key);
+		}
+		else {
+			throw std::logic_error("The command \"Key\" was called in wrong place"s);
+		}
+		return *this;
+	}
 
-BaseContext::BaseContext(Builder& builder) : builder_(builder) {}
+	Builder& Builder::Value(Node::Value value) {
+		AddElement(value);
+		return *this;
+	}
 
-StartContainersContext::StartContainersContext(Builder& builder) : BaseContext(builder) {}
+	DictItemContext Builder::StartDict() {
+		if (IsEmpty() || key_ || PrevIsArray()) {
+			node_stack_.emplace_back(std::move(AddElement(Dict())));
+			return DictItemContext(*this);
+		}
+		throw std::logic_error("The command \"StartDict\" was called in wrong place"s);
+	}
 
-ArrayContext& StartContainersContext::StartArray() {
-    return builder_.StartArray();
+	ArrayItemContext Builder::StartArray() {
+		if (IsEmpty() || key_ || PrevIsArray()) {
+			node_stack_.emplace_back(std::move(AddElement(Array())));
+			return *this;
+		}
+		else {
+			throw std::logic_error("The command \"StartArray\" was called in wrong place"s);
+		}
+	}
+
+	Builder& Builder::EndDict() {
+		if (PrevIsDict()) {
+			node_stack_.pop_back();
+		}
+		else {
+			throw std::logic_error("The command \"EndDict\" was called in wrong place"s);
+		}
+		return *this;
+	}
+
+	Builder& Builder::EndArray() {
+		if (PrevIsArray()) {
+			node_stack_.pop_back();
+		}
+		else {
+			throw std::logic_error("The command \"EndArray\" was called in wrong place"s);
+		}
+		return *this;
+	}
+
+	json::Node Builder::Build() {
+		if (node_stack_.size() == 1 && !node_stack_.back()->IsNull()) {
+			return root_;
+		}
+		else {
+			throw std::logic_error("The command \"Build\" was called in wrong place"s);
+		}
+	}
+
+	bool Builder::IsEmpty() const {
+		return node_stack_.back()->IsNull();
+	}
+
+	bool Builder::PrevIsArray() const {
+		return (node_stack_.back()->IsArray());
+	}
+
+	bool Builder::PrevIsDict() const {
+		return (node_stack_.back()->IsDict());
+	}
+
+	Node* Builder::AddElement(Node::Value value) {
+		if (IsEmpty()) {
+			node_stack_.back()->GetValue() = std::move(value);
+			return node_stack_.back();
+		}
+		else if (PrevIsArray()) {
+			Array& link_arr = std::get<Array>(node_stack_.back()->GetValue());
+			return &link_arr.emplace_back(value);
+		}
+		else if (PrevIsDict() && key_) {
+			Dict& link_dict = std::get<Dict>(node_stack_.back()->GetValue());
+			auto ptr = link_dict.emplace(key_.value(), value);
+			key_ = std::nullopt;
+			return &ptr.first->second;
+		}
+		else {
+			throw std::logic_error("The command \"Value\" was called in wrong place"s);
+		}
+	}
+
+	DictKeyContext DictItemContext::Key(std::string key) {
+		return builder_.Key(key);
+	}
+	Builder& DictItemContext::EndDict() {
+		return builder_.EndDict();
+	}
+	DictItemContext DictKeyContext::Value(Node::Value value) {
+		return DictItemContext(builder_.Value(value));
+	}
+	DictItemContext DictKeyContext::StartDict() {
+		return builder_.StartDict();
+	}
+	ArrayItemContext DictKeyContext::StartArray() {
+		return builder_.StartArray();
+	}
+	ArrayItemContext ArrayItemContext::Value(Node::Value value) {
+		return ArrayItemContext(builder_.Value(value));
+	}
+	DictItemContext ArrayItemContext::StartDict() {
+		return builder_.StartDict();
+	}
+	ArrayItemContext ArrayItemContext::StartArray() {
+		return builder_.StartArray();
+	}
+	Builder& ArrayItemContext::EndArray() {
+		return builder_.EndArray();
+	}
 }
-
-DictContext& StartContainersContext::StartDict() {
-    return builder_.StartDict();
-}
-
-KeyContext::KeyContext(Builder& builder) : StartContainersContext(builder) {}
-
-ValueContext KeyContext::Value(Node::Value value) {
-    return builder_.Value(std::move(value));
-}
-
-ValueContext::ValueContext(Builder& builder) : BaseContext(builder) {}
-
-KeyContext& ValueContext::Key(std::string key) {
-    return builder_.Key(std::move(key));
-}
-
-Builder& ValueContext::EndDict() {
-    return builder_.EndDict();
-}
-
-DictContext::DictContext(Builder& builder) : BaseContext(builder) {}
-
-KeyContext& DictContext::Key(std::string key) {
-    return builder_.Key(std::move(key));
-}
-
-Builder& DictContext::EndDict() {
-    return builder_.EndDict();
-}
-
-ArrayContext::ArrayContext(Builder& builder) : StartContainersContext(builder) {}
-
-ArrayContext& ArrayContext::Value(Node::Value value) {
-    return builder_.Value(std::move(value));
-}
-
-Builder& ArrayContext::EndArray() {
-    return builder_.EndArray();
-}
-
-Builder::Builder() : KeyContext(*this), ValueContext(*this), DictContext(*this), ArrayContext(*this) {}
-
-KeyContext& Builder::Key(std::string key) {
-    if (!root_.IsNull() || nodes_stack_.empty() || !nodes_stack_.back()->IsDict())
-        throw std::logic_error("Incorrect attempt to add key :" + key);
-
-    nodes_stack_.emplace_back(std::make_unique<Node>(std::move(key)));
-    return *this;
-}
-
-Builder& Builder::Value(Node::Value value) {
-    if (!root_.IsNull() || !CouldAddNode())
-        throw std::logic_error("Incorrect attempt to add Value");
-
-    std::visit([this](auto&& v) { nodes_stack_.emplace_back(std::make_unique<Node>(v)); }, value);
-    AddNode(*nodes_stack_.back().release());
-    return *this;
-}
-
-DictContext& Builder::StartDict() {
-    if (!root_.IsNull() || !CouldAddNode())
-        throw std::logic_error("Incorrect attempt to start Dict()");
-
-    nodes_stack_.emplace_back(std::make_unique<Node>(Dict()));
-    return *this;
-}
-
-Builder& Builder::EndDict() {
-    if (!root_.IsNull() || nodes_stack_.empty() || !nodes_stack_.back()->IsDict())
-        throw std::logic_error("Incorrect attempt to end Dict()");
-
-    AddNode(*nodes_stack_.back().release());
-    return *this;
-}
-
-ArrayContext& Builder::StartArray() {
-    if (!root_.IsNull() || !CouldAddNode())
-        throw std::logic_error("Incorrect attempt to start Array()");
-
-    nodes_stack_.emplace_back(std::make_unique<Node>(Array()));
-    return *this;
-}
-
-Builder& Builder::EndArray() {
-    if (!root_.IsNull() || nodes_stack_.empty() || !nodes_stack_.back()->IsArray())
-        throw std::logic_error("Incorrect attempt to end Array()");
-
-    AddNode(*nodes_stack_.back().release());
-    return *this;
-}
-
-const Node& Builder::Build() const {
-    if (root_.IsNull() || !nodes_stack_.empty())
-        throw std::logic_error("Could not build JSON");
-
-    return root_;
-}
-
-bool Builder::CouldAddNode() const {
-    return nodes_stack_.empty() || nodes_stack_.back()->IsArray() || nodes_stack_.back()->IsString();
-}
-
-void Builder::AddNode(Node top_node) {
-    nodes_stack_.pop_back();
-
-    if (nodes_stack_.empty()) {
-        root_ = top_node;
-    } else if (nodes_stack_.back()->IsArray()) {
-        std::get<Array>(nodes_stack_.back()->GetValue()).emplace_back(std::move(top_node));
-    } else if (nodes_stack_.back()->IsString()) {
-        std::string key = std::get<std::string>(nodes_stack_.back()->GetValue());
-        nodes_stack_.pop_back();
-        std::get<Dict>(nodes_stack_.back()->GetValue()).emplace(std::move(key), std::move(top_node));
-    } else {
-        if (top_node.IsDict()) {
-            nodes_stack_.back()->GetValue() = Dict();
-        } else if (top_node.IsArray()) {
-            nodes_stack_.back()->GetValue() = Array();
-        }
-    }
-}
-
-}  // namespace json
