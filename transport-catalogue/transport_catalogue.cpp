@@ -1,123 +1,69 @@
 #include "transport_catalogue.h"
 
-namespace transport_catalogue {
+#include <string>
+#include <vector>
+#include <algorithm>
 
-void TransportCatalogue::AddRoute(const std::string_view name,
-				const std::vector<std::string_view> stops, bool is_circular) {
-	std::vector<const Stop*> route_stops;
-	route_stops.reserve(stops.size());
+namespace transport {
 
-	auto &route = buses_.emplace_back(Bus { std::string(name), route_stops,
-			is_circular });
-	buses_name_.insert( { route.name, &route });
-	for (const auto &stop : stops) {
-		const auto *stop_ptr = FindStop(stop);
-		route.stops.push_back(stop_ptr);
-		buses_in_stop_[stop_ptr].insert(FindRoute(name));
-	}
-}
+    using namespace std::literals;
 
-void TransportCatalogue::AddStop(const std::string_view name,
-		const geo::Coordinates& coordinates) {
-	const auto &stop = stops_.emplace_back(
-			Stop { std::string(name), coordinates });
-	stops_name_.insert( { stop.name, &stop });
-	buses_in_stop_[&stop];
-}
+    void Catalogue::AddStop(const std::string& name, const geo::Coordinates& coordinates) {
+        all_stops_.push_back(Stop(name, coordinates));
+        Stop* added_stop = &all_stops_.back();
+        stop_to_buses_[added_stop->name];
+        stops_list_[added_stop->name] = added_stop;
+    }
 
-BusPtr TransportCatalogue::FindRoute(const std::string_view route_name) const {
-	const auto it = buses_name_.find(route_name);
-	if (it == buses_name_.end()) {
-		return nullptr;
-	} else {
-		return it->second;
-	}
-}
+    void Catalogue::AddBus(const std::string& name, const std::vector<Stop*>& stops, bool is_circle) {
+        all_buses_.push_back(Bus(name, stops, is_circle));
+        Bus* added_bus = &all_buses_.back();
+        for (const Stop* s : stops) {
+            stop_to_buses_[s->name][added_bus->name] = added_bus;
+        }
+        buses_list_[added_bus->name] = added_bus;
+    }
 
-StopPtr TransportCatalogue::FindStop(const std::string_view stop_name) const {
-	const auto it = stops_name_.find(stop_name);
-	if (it == stops_name_.end()) {
-		return nullptr;
-	} else {
-		return it->second;
-	}
-}
+    Stop* Catalogue::FindStop(const std::string_view stop) {
+        return stops_list_.count(stop) ? stops_list_.at(stop) : nullptr;
+    }
 
-const std::unordered_set<BusPtr>* TransportCatalogue::GetStopInfo(
-		const std::string_view &stop_name) const {
-	if (FindStop(stop_name)) {
-		return &buses_in_stop_.at(FindStop(stop_name));
-	} else {
-		return nullptr;
-	}
-}
+    const Stop* Catalogue::FindStop(const std::string_view stop) const {
+        return stops_list_.count(stop) ? stops_list_.at(stop) : nullptr;
+    }
 
-void TransportCatalogue::SetDistanceBetweenStops(StopPtr from, StopPtr to,
-		int distance) {
-	auto stops_pair = std::make_pair(from, to);
-	distance_between_stops_[stops_pair] = distance;
-}
+    Bus* Catalogue::FindBus(const std::string_view bus_name) {
+        return buses_list_.count(bus_name) ? buses_list_.at(bus_name) : nullptr;
+    }
 
-size_t TransportCatalogue::GetDistanceBetweenStops(StopPtr from,
-		StopPtr to) const {
-	auto stops_pair = std::make_pair(from, to);
-	if (distance_between_stops_.find(stops_pair)
-			!= distance_between_stops_.end()) {
-		return distance_between_stops_.at(stops_pair);
-	}
-	return GetDistanceBetweenStops(to, from);
-}
+    const Bus* Catalogue::FindBus(const std::string_view bus_name) const {
+        return buses_list_.count(bus_name) ? buses_list_.at(bus_name) : nullptr;
+    }
 
-const std::map<std::string_view, BusPtr> TransportCatalogue::GetAllRoutes() const {
-	std::map<std::string_view, BusPtr> result;
-	for (const auto &route : buses_) {
-		result[route.name] = &route;
-	}
-	return result;
-}
+    std::map<std::string_view, Bus*> Catalogue::GetBusesOnStop(const std::string_view stop_name) {
+        return stop_to_buses_.at(stop_name);
+    }
 
-const std::unordered_map<std::string_view, StopPtr>* TransportCatalogue::GetAllStops() const {
-	return &stops_name_;
-}
+    const std::map<std::string_view, Bus*> Catalogue::GetBusesOnStop(const std::string_view stop_name) const {
+        return stop_to_buses_.at(stop_name);
+    }
 
-const std::optional<RouteInfo> TransportCatalogue::GetRouteInfo(
-		const std::string_view &bus_name) const {
-	RouteInfo result;
-	const auto *route_ptr = FindRoute(bus_name);
-	if (route_ptr == nullptr) {
-		return {};
-	}
+    void Catalogue::SetDistance(Stop* from, Stop* to, int dist) {
+        from->stop_distances[to->name] = dist;
+    }
 
-	std::vector<StopPtr> stops_local { route_ptr->stops.begin(),
-			route_ptr->stops.end() };
-	std::unordered_set<StopPtr> unique_stops;
+    int Catalogue::GetDistance(const Stop* from, const Stop* to) const {
+        if (from->stop_distances.count(to->name)) return from->stop_distances.at(to->name);
+        else if (to->stop_distances.count(from->name)) return to->stop_distances.at(from->name);
+        else return 0;
+    }
 
-	std::for_each(stops_local.begin(), stops_local.end(),
-			[&unique_stops](const auto &stop) {
-				if (!unique_stops.count(stop)) {
-					unique_stops.insert(stop);
-				}
-			});
+    const std::map<std::string_view, Bus*>& Catalogue::GetSortedAllBuses() const {
+        return buses_list_;
+    }
 
-	if (!route_ptr->is_circular) {
-		stops_local.insert(stops_local.end(), next(route_ptr->stops.rbegin()),
-				route_ptr->stops.rend());
-	}
+    const std::map<std::string_view, Stop*>& Catalogue::GetSortedAllStops() const {
+        return stops_list_;
+    }
 
-	double route_length_straight = 0;
-	double route_length = 0;
-	for (std::vector<StopPtr>::const_iterator it(stops_local.begin());
-			it != prev(stops_local.end()); ++it) {
-		route_length_straight += ComputeDistance((*it)->coordinates,
-				(*(it + 1))->coordinates);
-		route_length += GetDistanceBetweenStops(*it, *(it + 1));
-	}
-
-	result.name = route_ptr->name;
-	result.stops = static_cast<int>(stops_local.size());
-	result.unique_stops = static_cast<int>(unique_stops.size());
-	result.route_length = route_length;
-	result.curvature = route_length / route_length_straight;
-	return result;
-}
-}
+} // namespace transport

@@ -1,31 +1,56 @@
 #pragma once
-#include "domain.h"
-#include "svg.h"
-#include "geo.h"
 
-#include <map>
-#include <set>
+#include "geo.h"
+#include "svg.h"
+#include "json.h"
+#include "domain.h"
+
 #include <vector>
+#include <string>
+#include <string_view>
+#include <stdexcept>
 #include <algorithm>
+#include <map>
+#include <optional>
 
 namespace renderer {
-	struct RenderSettings {
-		double width = 0.0;
-		double height = 0.0;
-		double padding = 0.0;
-		double line_width = 0.0;
-		double stop_radius = 0.0;
-		int bus_label_font_size = 0;
-        svg::Point bus_label_offset{0, 0};
-		int stop_label_font_size = 0;
-        svg::Point stop_label_offset{0, 0};
-        svg::Color underlayer_color{svg::NoneColor};
-		double underlayer_width = 0.0;
-		std::vector<svg::Color> color_palette;
-	};
+
+    class SphereProjector;
+
+    class MapRenderer {
+    public:
+        MapRenderer() = default;
+
+        MapRenderer(const json::Node& render_settings);
+
+        std::vector<svg::Polyline> GetBusLines(const std::map<std::string_view, domain::Bus*>& buses, const SphereProjector& sp) const;
+
+        std::vector<svg::Text> GetBusLabels(const std::map<std::string_view, domain::Bus*>& buses, const SphereProjector& sp) const;
+
+        std::vector<svg::Text> GetStopLabels(const std::map<std::string_view, domain::Stop*>& stops, const SphereProjector& sp) const;
+
+        std::vector<svg::Circle> GetStopCircles(const std::map<std::string_view, domain::Stop*>& stops, const SphereProjector& sp) const;
+
+        svg::Document GetSvgDocument(const std::map<std::string_view, domain::Bus*>& buses) const;
+
+        json::Node GetRenderSettings() const;
+
+    private:
+        double width_ = 0;
+        double height_ = 0;
+        double padding_ = 0;
+        double stop_radius_ = 0;
+        double line_width_ = 0;
+        int bus_label_font_size_ = 0;
+        svg::Point bus_label_offset_ = { 0.0, 0.0 };
+        svg::Point stop_label_offset_ = { 0.0, 0.0 };
+        int stop_label_font_size_ = 0;
+        svg::Color underlayer_color_;
+        double underlayer_width_ = 0;
+        std::vector<svg::Color> color_palette_ = {};
+    };
 
     inline const double EPSILON = 1e-6;
-
     bool IsZero(double value);
 
     class SphereProjector {
@@ -82,13 +107,4 @@ namespace renderer {
         double zoom_coeff_ = 0;
     };
 
-    class MapRenderer {
-    public:
-        void SetRenderSettings(RenderSettings& settings);
-
-        svg::Document GetSVG(const std::map<std::string_view, domain::BusPtr>& routes) const;
-
-    private:
-        RenderSettings render_settings_;
-    };
-}
+} // namespace renderer

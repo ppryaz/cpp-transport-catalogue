@@ -1,40 +1,49 @@
 #pragma once
 
-#include "transport_catalogue.h"
-#include "request_handler.h"
 #include "json.h"
+#include "transport_catalogue.h"
 #include "domain.h"
-#include "map_renderer.h"
-#include "transport_router.h"
 
-namespace json_reader {
+#include <unordered_map>
+#include <string>
+#include <string_view>
+#include <vector>
 
-	using DataBasePtr = transport_catalogue::TransportCatalogue*;
-	using MapRenderPtr = renderer::MapRenderer*;
-	using RouterPtr = transport_router::TransportRouter*;
-	class JsonReader {
-	public:
-		explicit JsonReader(std::istream& input, DataBasePtr catalogue, MapRenderPtr map_renderer,
-			RouterPtr transport_router);
+class JsonReader {
+public:
+    JsonReader(json::Document input_json)
+        : input_(input_json) {}
 
-		void PrintResult(std::ostream& output);
-	private:
-		json::Document input_;
-		DataBasePtr catalogue_ptr_;
-		MapRenderPtr map_renderer_ptr_;
-		RouterPtr router_ptr_;
+    const json::Node& GetBaseRequest() const;
 
-		json::Document GetOutput();
-		json::Dict GetRoutes(Handler::RequestHandler& handler, const json::Node& request);
-		json::Dict GetStops(Handler::RequestHandler& handler, const json::Node& request);
-		json::Dict GetMap(Handler::RequestHandler& handler, const json::Node& request);
-		json::Dict GetOptimalRoute(Handler::RequestHandler& handler, const json::Node& request);
-		renderer::RenderSettings ProcessRenderSettings(const json::Dict& settings);
-		svg::Color ProcessColor(const json::Node& color);
-		void ProcessInput();
-		void ProcessStops();
-		void ProcessRoutes();
+    const json::Node& GetStatRequest() const;
 
-		void ProcessRouterSettings();
-	};
-}
+    const json::Node& GetRenderSettings() const;
+
+    const json::Node& GetRoutingSettings() const;
+
+    const json::Node& GetSerializationSettings() const;
+
+    void FillCatalogue(transport::Catalogue& catalogue) const;
+
+private:
+    json::Document input_;
+    json::Node dumm_{ nullptr };
+
+    struct Bus_info {
+        std::vector<std::string_view> stops;
+        std::string_view final_stop;
+        bool is_circle;
+    };
+
+    using StopsDistMap = std::unordered_map<std::string_view, std::unordered_map<std::string_view, int>>;
+    using BusesInfoMap = std::unordered_map<std::string_view, Bus_info>;
+
+    void ParseStopAddRequest(transport::Catalogue& catalogue, const json::Dict& request_map,
+        StopsDistMap& stop_to_stops_distance) const;
+    void SetStopsDistances(transport::Catalogue& catalogue,
+        const StopsDistMap& stop_to_stops_distance) const;
+    void ParseBusAddRequest(const json::Dict& request_map, BusesInfoMap& buses_info) const;
+    void BusesAddProcess(transport::Catalogue& catalogue, const BusesInfoMap& buses_info) const;
+    void SetFinals(transport::Catalogue& catalogue, const BusesInfoMap& buses_info) const;
+};

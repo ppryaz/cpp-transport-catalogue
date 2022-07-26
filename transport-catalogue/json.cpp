@@ -34,7 +34,6 @@ namespace json {
 
         Node LoadDict(std::istream& input) {
             Dict dict;
-
             for (char c; input >> c && c != '}';) {
                 if (c == '"') {
                     std::string key = LoadString(input).AsString();
@@ -105,6 +104,7 @@ namespace json {
                 }
                 ++it;
             }
+
             return Node(std::move(s));
         }
 
@@ -132,14 +132,15 @@ namespace json {
 
         Node LoadNumber(std::istream& input) {
             std::string parsed_num;
-
-           auto read_char = [&parsed_num, &input] {
+            // Считывает в parsed_num очередной символ из input
+            auto read_char = [&parsed_num, &input] {
                 parsed_num += static_cast<char>(input.get());
                 if (!input) {
                     throw ParsingError("Failed to read number from stream"s);
                 }
             };
 
+            // Считывает одну или более цифр в parsed_num из input
             auto read_digits = [&input, read_char] {
                 if (!std::isdigit(input.peek())) {
                     throw ParsingError("A digit is expected"s);
@@ -152,20 +153,24 @@ namespace json {
             if (input.peek() == '-') {
                 read_char();
             }
-           if (input.peek() == '0') {
+            // Парсим целую часть числа
+            if (input.peek() == '0') {
                 read_char();
+                // После 0 в JSON не могут идти другие цифры
             }
             else {
                 read_digits();
             }
 
             bool is_int = true;
-           if (input.peek() == '.') {
+            // Парсим дробную часть числа
+            if (input.peek() == '.') {
                 read_char();
                 read_digits();
                 is_int = false;
             }
 
+            // Парсим экспоненциальную часть числа
             if (int ch = input.peek(); ch == 'e' || ch == 'E') {
                 read_char();
                 if (ch = input.peek(); ch == '+' || ch == '-') {
@@ -177,6 +182,7 @@ namespace json {
 
             try {
                 if (is_int) {
+                    // Сначала пробуем преобразовать строку в int
                     try {
                         return std::stoi(parsed_num);
                     }
@@ -347,8 +353,9 @@ namespace json {
     Document Load(std::istream& input) {
         return Document{ LoadNode(input) };
     }
-    
+
     void Print(const Document& doc, std::ostream& output) {
-            PrintNode(doc.GetRoot(), PrintContext{ output });
-        }
+        PrintNode(doc.GetRoot(), PrintContext{ output });
+    }
+
 }  // namespace json

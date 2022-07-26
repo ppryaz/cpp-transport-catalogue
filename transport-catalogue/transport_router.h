@@ -1,60 +1,58 @@
 #pragma once
-
+#include "domain.h"
+#include "json.h"
+#include "json_builder.h"
+#include "transport_catalogue.h"
 #include "graph.h"
 #include "router.h"
-#include "transport_catalogue.h"
 
-#include <vector>
-#include <memory>
+#include <optional>
+#include <string>
+#include <string_view>
 
-namespace transport_router {
-    using RouteSettings = domain::RouteSettings;
+namespace transport {
 
-    struct TravelDuration {
-        TravelDuration() = default;
-        TravelDuration(int stops_number, double waiting_time, double travel_time)
-            : stops_number(stops_number)
-            , waiting_time(waiting_time)
-            , travel_time(travel_time) {
+    class Router {
+    public:
+        Router() = default;
+
+        Router(const json::Node& settings_node);
+        Router(const json::Node& settings_node, const Catalogue& tcat);
+        Router(const json::Node& settings_node,
+            graph::DirectedWeightedGraph<double> graph,
+            std::map<std::string, graph::VertexId> stop_ids);
+
+        void SetGraph(graph::DirectedWeightedGraph<double>&& graph,
+            std::map<std::string, graph::VertexId>&& stop_ids);
+
+        const graph::DirectedWeightedGraph<double>& BuildGraph(const Catalogue& tcat);
+
+        json::Array GetEdgesItems(const std::vector<graph::EdgeId>& edges) const;
+
+        std::optional<graph::Router<double>::RouteInfo> GetRouteInfo(const Stop* from, const Stop* to) const;
+
+        size_t GetGraphVertexCount();
+
+        const std::map<std::string, graph::VertexId>& GetStopIds() const;
+
+        const graph::DirectedWeightedGraph<double>& GetGraph() const;
+
+        json::Node GetSettings() const;
+
+        ~Router() {
+            delete router_ptr_;
         }
-        int stops_number = 0;
-        double waiting_time = 0.0;
-        double travel_time = 0.0;
-    };
 
-    TravelDuration operator+(const TravelDuration& lhs, const TravelDuration& rhs);
-
-    bool operator<(const TravelDuration& lhs, const TravelDuration& rhs);
-
-    bool operator>(const TravelDuration& lhs, const TravelDuration& rhs);
-
-    struct TravelProps {
-        domain::StopPtr from = nullptr;
-        domain::StopPtr to = nullptr;
-        domain::BusPtr route = nullptr;
-        TravelDuration travel_duration = {};
-    };
-
-    class DistanceProcessor {
-    public:
-        DistanceProcessor(const transport_catalogue::TransportCatalogue* catalogue, const domain::BusPtr route);
-        size_t DistanceBetween(size_t index_from, size_t index_to);
     private:
-        std::vector<size_t> forward_distance_;
-        std::vector<size_t> reverse_distance_;
+        int bus_wait_time_ = 0;
+        double bus_velocity_ = 0;
+
+        graph::DirectedWeightedGraph<double> graph_;
+        std::map<std::string, graph::VertexId> stop_ids_;
+
+        graph::Router<double>* router_ptr_ = nullptr;
+
+        void SetSettings(const json::Node& settings_node);
     };
 
-    class TransportRouter {
-    public:
-        TransportRouter() = default;
-        void InitRouter(RouteSettings settings, const transport_catalogue::TransportCatalogue* catalogue);
-        std::optional<std::vector<const TravelProps*>> FindRoute(std::string_view from, std::string_view to) const;
-    private:
-        RouteSettings settings_;
-        const transport_catalogue::TransportCatalogue* catalogue_ = nullptr;
-        std::unique_ptr<graph::DirectedWeightedGraph<TravelDuration>> graph_ = nullptr;
-        std::unordered_map<domain::StopPtr, graph::VertexId> graph_vertexes_ = {};
-        std::vector<TravelProps> graph_edges_ = {};
-        std::unique_ptr<graph::Router<TravelDuration>> router_;
-    };
-}
+} // namespace transport

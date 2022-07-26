@@ -1,31 +1,30 @@
 #pragma once
-#include <string>
-#include <vector>
 
 #include "geo.h"
 
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include <string_view>
+
 namespace domain {
 
-struct Stop {
-		std::string name;
-		geo::Coordinates coordinates;
-		//std::vector<std::pair<std::string, int>> stops_distance;
-};
+    struct Stop {
+        Stop(const std::string& name, const geo::Coordinates& coordinates);
+        int GetDistance(Stop* to);
 
-using StopPtr = const Stop*;
+        std::string name;
+        geo::Coordinates coordinates;
+        std::unordered_map<std::string_view, int> stop_distances;
+    };
 
-struct Bus {
-		std::string name;
-		std::vector<const Stop*> stops;
-		bool is_circular;
-};
+    struct Bus {
+        Bus(const std::string& name, std::vector<Stop*> stops, bool is_circle);
 
-using BusPtr = const Bus*;
+        std::string name;
+        std::vector<Stop*> stops;
+        bool is_circle;
+        Stop* final_stop = nullptr;
+    };
 
-struct RouteSettings
-{
-	int bus_wait_time = 1;
-	double bus_velocity = 1.0;
-};
-
-} // namespace Domain
+} //namespace domain
