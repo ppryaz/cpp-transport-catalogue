@@ -9,10 +9,13 @@ find_package(Threads REQUIRED)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS transport_catalogue.proto)
 
 set(TRANSPORT_CATALOGUE_FILES 
-main.cpp request_handler.h
-request_handler.cpp 
-                             domain.h  domain.cpp 
-  transport_catalogue.h                             transport_catalogue.cpp 
+                              main.cpp                      
+                              request_handler.h
+                              request_handler.cpp 
+                              domain.h
+                              domain.cpp 
+                              transport_catalogue.h       
+                              transport_catalogue.cpp 
                               geo.cpp geo.h
                               graph.h
                               json_builder.cpp json_builder.h

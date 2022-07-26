@@ -11,9 +11,9 @@
 #include <transport_catalogue.pb.h>
 
 void Serialize(const transport::Catalogue& tcat,
-    const renderer::MapRenderer& renderer,
-    const transport::Router& router,
-    std::ostream& output);
+	const renderer::MapRenderer& renderer,
+	const transport::Router& router,
+	std::ostream& output);
 
 serialize::Stop Serialize(const transport::Stop* stop);
 
@@ -26,4 +26,4 @@ serialize::RouterSettings GetRouterSettingSerialize(const json::Node& router_set
 serialize::Router Serialize(const transport::Router& router);
 
 std::tuple<transport::Catalogue, renderer::MapRenderer, transport::Router,
-    graph::DirectedWeightedGraph<double>, std::map<std::string, graph::VertexId>> Deserialize(std::istream& input);
+	graph::DirectedWeightedGraph<double>, std::map<std::string, graph::VertexId>> Deserialize(std::istream& input);

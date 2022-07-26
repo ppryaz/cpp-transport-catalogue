@@ -12,47 +12,47 @@
 
 namespace transport {
 
-    class Router {
-    public:
-        Router() = default;
+	class Router {
+	public:
+		Router() = default;
 
-        Router(const json::Node& settings_node);
-        Router(const json::Node& settings_node, const Catalogue& tcat);
-        Router(const json::Node& settings_node,
-            graph::DirectedWeightedGraph<double> graph,
-            std::map<std::string, graph::VertexId> stop_ids);
+		Router(const json::Node& settings_node);
+		Router(const json::Node& settings_node, const Catalogue& tcat);
+		Router(const json::Node& settings_node,
+			graph::DirectedWeightedGraph<double> graph,
+			std::map<std::string, graph::VertexId> stop_ids);
 
-        void SetGraph(graph::DirectedWeightedGraph<double>&& graph,
-            std::map<std::string, graph::VertexId>&& stop_ids);
+		void SetGraph(graph::DirectedWeightedGraph<double>&& graph,
+			std::map<std::string, graph::VertexId>&& stop_ids);
 
-        const graph::DirectedWeightedGraph<double>& BuildGraph(const Catalogue& tcat);
+		const graph::DirectedWeightedGraph<double>& BuildGraph(const Catalogue& tcat);
 
-        json::Array GetEdgesItems(const std::vector<graph::EdgeId>& edges) const;
+		json::Array GetEdgesItems(const std::vector<graph::EdgeId>& edges) const;
 
-        std::optional<graph::Router<double>::RouteInfo> GetRouteInfo(const Stop* from, const Stop* to) const;
+		std::optional<graph::Router<double>::RouteInfo> GetRouteInfo(const Stop* from, const Stop* to) const;
 
-        size_t GetGraphVertexCount();
+		size_t GetGraphVertexCount();
 
-        const std::map<std::string, graph::VertexId>& GetStopIds() const;
+		const std::map<std::string, graph::VertexId>& GetStopIds() const;
 
-        const graph::DirectedWeightedGraph<double>& GetGraph() const;
+		const graph::DirectedWeightedGraph<double>& GetGraph() const;
 
-        json::Node GetSettings() const;
+		json::Node GetSettings() const;
 
-        ~Router() {
-            delete router_ptr_;
-        }
+		~Router() {
+			delete router_ptr_;
+		}
 
-    private:
-        int bus_wait_time_ = 0;
-        double bus_velocity_ = 0;
+	private:
+		int bus_wait_time_ = 0;
+		double bus_velocity_ = 0;
 
-        graph::DirectedWeightedGraph<double> graph_;
-        std::map<std::string, graph::VertexId> stop_ids_;
+		graph::DirectedWeightedGraph<double> graph_;
+		std::map<std::string, graph::VertexId> stop_ids_;
 
-        graph::Router<double>* router_ptr_ = nullptr;
+		graph::Router<double>* router_ptr_ = nullptr;
 
-        void SetSettings(const json::Node& settings_node);
-    };
+		void SetSettings(const json::Node& settings_node);
+	};
 
 } // namespace transport
